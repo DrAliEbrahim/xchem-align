@@ -15,28 +15,18 @@ XCA is typically run on the Diamond file system. If you have user access you can
 
 There are a few specific steps to get XCA up and running:
 1. [**Enable**](#enabling-the-xchemalign-environment) the XChemAlign environment
-2. [**Declare**](#declaring-things) a few things about your data in two structured files in `yaml`[^1]
-3. [**Collate**](#collating-files) your files in a new (specific) directory structure
-4. [**Align**](#aligning-everything) all binding sites to common origins
+2. [**Declare**](#declaring-things) a few things about your data in two structured files in `yaml`
+3. [**Collate**](#collating-files) your files in a specific directory structure using `collator`
+4. [**Align**](#aligning-everything) all binding sites to common origins using `aligner`
 5. [**Release**](#upload-to-fragalysis) the data to Fragalysis
 6. [**Re-release**](#creating-subsequent-versions) additional data
 
 If you won't be running this at Diamond, you will first have to set up your environment and copy over files. See the [instructions here](#non-diamond-instructions)
 If someone has told you to use the "staging" deployment of XCA, follow [the instructions in the "staging deployment" section](#staging-deployment).
 
-If you're having issues getting XCA to work, we have put together a list of common errors:
-
-### Debugging common errors
-
-* [Reporting version of the code](#reporting-version-of-the-code)
-* [Missing PanDDA Event Files Warning When You Have Event Maps](#missing-pandda-event-files-warning-when-you-have-event-maps)
-* [Missing PanDDAs Event Files Warning When No Event Maps Have Been Generated](#missing-panddas-event-files-warning-when-no-event-maps-have-been-generated)
-* [Multiple Reference Structures](#missing-panddas-event-files-warning-when-no-event-maps-have-been-generated)
-* [Adding PDB Structures To The Alignment](#adding-pdb-structures-to-the-alignment)
+If you're having issues getting XCA to work, we have put together a list of [common errors](#debugging-errors)
 
 If You're still having problems you can get in touch with the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)
-
-[^1]: "yet another markup language"
 
 ---
 
@@ -60,44 +50,15 @@ conda activate /dls/science/groups/i04-1/software/xchem-align/env_xchem_align
 
 ## 2. Declaring things
 
-### 2.1 Versioning
+### 2.1 Directory structure
 
-Starting in Dec 2024, XChemAlign implemented a more formal approach to versioning the data that it generates.
-A new `data_format_version` property was introduced (included in the output metadata) that describes the version of the
-data that is generated. This corresponds to a major and minor version number written as major.minor (e.g. 2.3).
-A change to the minor version number (e.g. 2.3 -> 2.4) means that XCA changed, but that either there were no changes to
-the data that is generated or the changes are accommodated automatically.
-A change to the major version (e.g. 2.3 -> 3.0) means that the data is now incompatible with previously generated data,
-and you will need to regenerate all the data starting with `upload_1`, remove the current data for your target from
-Fragalysis and load it again (potentially loosing some tagging information and snapshots). We try to avoid having major version
-changes, but sometimes this is unavoidable.
+For XCA tools to run correctly they require a specific directory structure. To enable this, we recommend you run `collator` to create the structure automatically.
 
-To facilitate handling this versioning, the way XCA works has been changed, resulting in a different way you need to
-setup the data for your project. You now need a *working directory* and in that directory are directories for each
-major version. This might look like this:
-
-```
-working-directory / upload-current
-                  / upload-v2 / upload_1
-                              / upload_2
-                              / upload_3
-                  / upload-v3 / upload_1
-```
-
-That scenario models the case when the data model version has just changed from 2 to 3. A new directory has been created
-for the v3 data and the old v2 data is still there in case you need to look at it. The `upload-current` directory is a
-symbolic link to the latest version directory (e.g. `upload-v3`).
-
-You do not need to worry too much about this as XCA will handle this for you automatically. You just need to tell it where
-your `working-directory` is, or if you don't it uses the current directory. And the `working-directory` does not have to
-be named `working-directory`, it can have any name.
-
-Your actions to set this up need to be:
+To set this up:
 
 1. Create a working directory e.g. `mkdir xchem-align`
-2. cd into it (or use the `-d` arguments when you run `collator` and `aligner`)
-3. Run `collator` - it will notice that the working directory has not been initialised and will create the `upload-v?`
-   directory and the `upload-current` symbolic link, and dummy `config.yaml` and `assemblies.yaml` files:
+2. `cd` into your working directory (or use the `-d` arguments when you run `collator` and `aligner`)
+3. Run `xchemalign.collator` - it will notice that the working directory has not been initialised, creating an `upload-v?` directory with an `upload-current` symbolic link, and dummy `config.yaml` and `assemblies.yaml` files:
 
 ```commandline
 python -m xchemalign.collator -d <your working dir>
@@ -122,37 +83,7 @@ INFO: Then you can run collator like this (omit the -d argument if you are alrea
       python -m xchemalign.collator -d wdir
 ```
 
-If you run `collator` when the major data format version has changed `collator` will offer to automatically migrate
-your environment and create a new directory for the new version (the old data will still be kept). You will see
-something like this:
-```
-Using wdir as working dir
-INFO: initialising logging at level 0 at 2024-12-04 11:19:13.425034
-INFO: found 2 inputs
-INFO: adding input dls/labxchem/data/lb32627/lb32627-66 with 8 panddas event maps
-INFO: adding input reference
-INFO: collator:  Namespace(dir='wdir', log_file=None, log_level=0, validate=False, no_git_info=True)
-INFO: version is 2
-INFO: reading metadata for version 1
-INFO: reading metadata for version wdir/upload-current/upload_1 wdir/upload-current/upload_1/meta_collator.yaml
-INFO: setting version dir to upload_2
-INFO: found 1 metadata files from previous versions
-INFO: Data format versions: current=3.0 previous=2.2
-ERROR: Old upload version found that is incompatible with this version of XCA
-Do you want an environment for a new version of your data creating? (Y/N)y
-INFO: migrating data for new data format version 3.0
-INFO: creating new working dir wdir/upload-v3
-INFO: copying config.yaml and assemblies.yaml
-INFO: removing wdir/upload-current symlink
-INFO: creating symlink wdir/upload-current -> wdir/upload-v3
-INFO: A new directory upload-v3 for data format version 3.0 has been created and the current config.yaml and assemblies.yaml have been copied there.
-      It is possible that you might need to update those files.
-      The old data is in a directory named upload_v? where ? is the old version number
-      Once ready you can re-run collator using the same command you just used.
-```
-
-After that just re-run your `collator` command and it will perform its work in the new directory it has created for the
-current version.
+**NOTE**: Starting in Dec 2024, XChemAlign implemented a more formal approach to the data that it generates. XCA handles all of this automatically. If you think you're experiencing versioning issues please [read this extra information](#version-of-the-code).
 
 ### 2.2. The Config Yaml
 
@@ -162,55 +93,55 @@ The config yaml defines what data to collect for collation. This includes raw cr
 
 Working with YAML files can be difficult at first. Free tools such as [yamlchecker.com](https://yamlchecker.com) may help you learn and check the syntax.
 
+Here is an example YAML file which can be downloaded [here]. A blank version can be downloaded [here].
+
 ```yaml
 # DO NOT USE TABS FOR THE WHITESPACE!
 
-target_name: Mpro        # The name of your target.
-                         # ??~~If adding to data already on Fragalysis, use that 'target' name~~??
+target_name: Mpro        # The name of your target. If adding to data already on Fragalysis, use that 'target'
 
-base_dir: /                                  # All _inputs_ are relative to this directory.
-                                             # This is usually '/', certainly at Diamond
-# NOTE: output_dir is no longer needed
+base_dir: /                                  # All _inputs_ are relative to this directory. This is usually '/' (certainly at Diamond)
 
-extra_files_dir: path/to/extra_files         # Optional directory where your extra files are located
-                                             # Defaults to extra_files in the current version directory
-ref_datasets:        # List of datasets with reference conformations; these get aligned to every canonical site.
-                     # You generally want at least one for each major class of conformation
-- Mpro-IBM0045       # Provide here the crystal ids as they appear in the model_building or reference directories
-- Mpro-IBM0175
+extra_files_dir: path/to/extra_files         # Optional directory where your extra files are located. Defaults to extra_files in the current version directory
+
+ref_datasets:        # List of datasets with reference conformations; these get aligned to every canonical site. You generally want at least one for each major class of conformation
+  - Mpro-IBM0045     # Provide here the crystal ids as they appear in the model_building or reference directories
+  - Mpro-IBM0175
 
 panddas_missing_ok: [ Mpro-x0089, Mpro-x0211 ]    # Crystals for which XCA should ignore that event maps are missing.
 
 inputs:        # The datasources to collate
 
   - dir: dls/labxchem/data/2020/lb27995-1   # The visit directory; assumes processing/analysis/model_building is present
-                                            # Path is _relative_ to 'base_dir'.
+                                            # Path is relative to 'base_dir'.
 
-       type: model_building             # "model_building" means: XChem data
+       type: model_building             # "model_building" indicates this is XChem data
 
        code_prefix: m                            # prepend "m" to the code, e.g. mx0325a (instead of x0325a)  (ignored by XCA)
+       
        code_prefix_tooltip: MERS structures      # for fragalysis to display in the tooltip for short code (ignored by XCA)
 
-       soakdb: processing/database/soakDBDataFile.sqlite    # Optional path to the soakdb database relative to 'dir'.
-                                                            # Defaults to processing/database/soakDBDataFile.sqlite
+       soakdb: processing/database/soakDBDataFile.sqlite    # Optional path to the soakdb database relative to 'dir'. Defaults to processing/database/soakDBDataFile.sqlite
 
        exclude: [Mpro-IBM0057, Mpro-IBM0108]   # Datasets to be ignored (e.g. if buggy)
 
-       panddas_event_files:         # List tables written by pandda_inspect, for all pandda runs (XCA figures out the rest)
-         - processing/analysis/panddas/analyses/pandda_inspect_events.csv  # relative path, starting from 'dir'.
+       covalent: true                          # Display covalent bonds in Fragalysis. Omit if no covalent bonds are present
 
-      sequences:                    # use FASTA format files to define the protein sequences
-        dir: processing/analysis/sequences  # relative to the dir of the input
-        default: default.fa         # this sequence will be used unless the crystal is defined as a variant
+       panddas_event_files:         # List event csv tables written by pandda_inspect for all pandda runs. Path is relative to 'dir'.
+         - processing/analysis/panddas/analyses/pandda_inspect_events.csv  
+      
+       sequences:                           # Use FASTA format files to define the protein sequences
+        dir: processing/analysis/sequences  # Path is relative to 'dir'
+        default: default.fa                 # This sequence will be used unless the crystal is defined as a variant
         variants:
-          - sequence: 2-chain.fa    # individual crystals can have a different sequence
+          - sequence: 2-chain.fa            # Individual crystals can have a different FASTA sequence
             crystals:
-              - A71EV2A-x5226
-              - A71EV2A-x5398
+              - Mpro-x5226
+              - Mpro-x5398
 
 
   - dir: dls/labxchem/data/lb32633/lb32633-6/processing/analysis/additional_pdbs_forXCA
-    type: manual       # each downloaded pdb file (cif!) and corresponding .mtz file are put in this dir.
+    type: manual       # "manual" indicates this is a non-diamond dataset. Each pdb file (cif!) and corresponding .mtz file are put in this dir.
 ```
 
 Note that the `extra_files_dir`, `soakdb`, `exclude` and `panddas_missing_ok` items are optional, either
@@ -267,46 +198,6 @@ then 2 crystals will be processed and given the names 1ABC and 5XYZ. The second 
 **NOTE**: currently the ligand name in the PDB MUST be LIG, even if it is something different in the downloaded files.
 So, currently, the ligand in the PDB file must be renamed to LIG (do not rename it in the CIF file). We expect to remove
 this limitation soon.
-
-#### Ligand definition
-
-The definition of what is considered to be a ligand is driven by the contents of the CIF file. For each crystal there
-must be a single CIF file (referenced in SoakDB) and it must contain all the molecules that you want to be considered as
-ligands. Typically there will be a single molecule, but it is possible (e.g. for combi-soaks) for there to be multiple
-ones. An example can be found [here](content/CHIKV_MacB-x1739.cif). That CIF defines 3 ligands, named LIG, LG1 and LG2.
-These must be defined in the `data_comp_list` block. Whatever is defined there is extracted out from its own
-`data_comp_LG1` block (corresponding to the ligand name). The precise names of the ligand are not important, but it is
-useful to follow a convention of using the name `LIG` if there is only one ligand, and using the names `LG1`, `LG2`, ...
-if there are multiple ligands (the example file does not quite follow tht convention).
-
-Those molecules are written to the metadata and are used to drive the XCA process. The metadata now looks like this:
-```yaml
-      ligand_cif:
-        file: upload_1/crystallographic_files/CHIKV_MacB-x1739/CHIKV_MacB-x1739.cif
-        sha256: d0556ef2b0c3bd065be7d29a3b37698bd1cb099a5122cb27f6fa6a75231a2a98
-        source_file: data/lb32633-6/inputs/dls/labxchem/data/lb32633/lb32633-6/processing/analysis/model_building/CHIKV_MacB-x1739/merged.cif
-        ligands:
-          LG1: {smiles: 'Cc1cn[nH]c1-c1ccncc1'}
-          LG2: {smiles: Nc1nnc2ccccn12}
-          LIG: {smiles: O=C1NCCN1}
-```
-Note how multiple ligands can be present.
-
-Another thing to consider here is the definition of those ligands in the PDB file. The same ligand names as are in the
-CIF file must be used. Also, check the chain assignment of the ligands. Sometimes they are assigned to the wrong
-chain.
-
-When there are multiple ligands present the data for the `CompoundCode` and `CompoundSMILES` columns in soakDB must
-correspond to those molecules.
-
-For `CompoundCode` the codes must be semi-colon separated and must be in the same order as in the CIF file. So for the
-above example the value would look like this: `code_for_lg1;code_for_lg2;code_for_lig`. If the number of values does
-not match the number of molecules in the CIF file then an error is thrown.
-
-For `CompoundSMILES` the same applies - semi-colon separated and the same order. But in the case that the soaked
-compound is different to the modeled one the soaked one can also be specified according to the following:
-`smiles1;smiles2 smiles3;smiles4`. In this case the second molecule (LG2) has a modeled SMILES of smiles2 and a
-soaked SMILES of smiles3. Only use space to separate the modeled and soaked SMILES.
 
 #### Sequence information
 
@@ -728,6 +619,14 @@ Fragalysis also only accepts uploads in the strict sequence described.
 
 ## Debugging Errors
 
+* [Reporting version of the code](#reporting-version-of-the-code)
+* [Missing PanDDA Event Files Warning When You Have Event Maps](#missing-pandda-event-files-warning-when-you-have-event-maps)
+* [Missing PanDDAs Event Files Warning When No Event Maps Have Been Generated](#missing-panddas-event-files-warning-when-no-event-maps-have-been-generated)
+* [Multiple Reference Structures](#missing-panddas-event-files-warning-when-no-event-maps-have-been-generated)
+* [Adding PDB Structures To The Alignment](#adding-pdb-structures-to-the-alignment)
+
+If You're still having problems you can get in touch with the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)
+
 ### Look at the logs
 
 The log files created by these tools contain valuable information that you should look at.
@@ -761,9 +660,101 @@ Is that a concern? That's for you to decide. That's why it's a **warning** not a
 But to ignore it completely is an error on your part!
 
 
-### Reporting version of the code.
+### Version of the code
 
-If you successfully ran *collator* then the file `meta_collator.yaml` in your upload directory will contain a section like this:
+Starting in Dec 2024, XChemAlign implemented a more formal approach to versioning the data that it generates.
+A new `data_format_version` property was introduced (included in the output metadata) that describes the version of the
+data that is generated. This corresponds to a major and minor version number written as major.minor (e.g. 2.3).
+A change to the minor version number (e.g. 2.3 -> 2.4) means that XCA changed, but that either there were no changes to
+the data that is generated or the changes are accommodated automatically.
+A change to the major version (e.g. 2.3 -> 3.0) means that the data is now incompatible with previously generated data,
+and you will need to regenerate all the data starting with `upload_1`, remove the current data for your target from
+Fragalysis and load it again (potentially loosing some tagging information and snapshots). We try to avoid having major version
+changes, but sometimes this is unavoidable.
+
+To facilitate handling this versioning, the way XCA works has been changed, resulting in a different way you need to
+setup the data for your project. You now need a *working directory* and in that directory are directories for each
+major version. This might look like this:
+
+```
+working-directory / upload-current
+                  / upload-v2 / upload_1
+                              / upload_2
+                              / upload_3
+                  / upload-v3 / upload_1
+```
+
+That scenario models the case when the data model version has just changed from 2 to 3. A new directory has been created
+for the v3 data and the old v2 data is still there in case you need to look at it. The `upload-current` directory is a
+symbolic link to the latest version directory (e.g. `upload-v3`).
+
+You do not need to worry too much about this as XCA will handle this for you automatically. You just need to tell it where
+your `working-directory` is, or if you don't it uses the current directory. And the `working-directory` does not have to
+be named `working-directory`, it can have any name.
+
+Your actions to set this up need to be:
+
+1. Create a working directory e.g. `mkdir xchem-align`
+2. cd into it (or use the `-d` arguments when you run `collator` and `aligner`)
+3. Run `collator` - it will notice that the working directory has not been initialised and will create the `upload-v?`
+   directory and the `upload-current` symbolic link, and dummy `config.yaml` and `assemblies.yaml` files:
+
+```commandline
+python -m xchemalign.collator -d <your working dir>
+```
+
+If you are already in your working dir you can leave out `-d <your working dir>`.
+
+When running `collator` for the first time you will see something like this if the working directory needs to be
+initialised:
+```
+Using wdir as working dir
+Working dir does not seem to have been initialised - missing 'upload_current' symlink
+Do you want the working dir to be initialised? (Y/N)y
+Initialising working dir
+INFO: initialising logging at level 0 at 2024-12-04 11:13:37.049101
+INFO: Using wdir as working dir
+INFO: Current data format version is 2.1
+INFO: Your working environment has been set up in wdir/upload-current
+INFO: In there you will find dummy config.yaml and assemblies.yaml files
+INFO: You will need to edit these as described in the User Guide.
+INFO: Then you can run collator like this (omit the -d argument if you are already in that directory):
+      python -m xchemalign.collator -d wdir
+```
+
+If you run `collator` when the major data format version has changed `collator` will offer to automatically migrate
+your environment and create a new directory for the new version (the old data will still be kept). You will see
+something like this:
+```
+Using wdir as working dir
+INFO: initialising logging at level 0 at 2024-12-04 11:19:13.425034
+INFO: found 2 inputs
+INFO: adding input dls/labxchem/data/lb32627/lb32627-66 with 8 panddas event maps
+INFO: adding input reference
+INFO: collator:  Namespace(dir='wdir', log_file=None, log_level=0, validate=False, no_git_info=True)
+INFO: version is 2
+INFO: reading metadata for version 1
+INFO: reading metadata for version wdir/upload-current/upload_1 wdir/upload-current/upload_1/meta_collator.yaml
+INFO: setting version dir to upload_2
+INFO: found 1 metadata files from previous versions
+INFO: Data format versions: current=3.0 previous=2.2
+ERROR: Old upload version found that is incompatible with this version of XCA
+Do you want an environment for a new version of your data creating? (Y/N)y
+INFO: migrating data for new data format version 3.0
+INFO: creating new working dir wdir/upload-v3
+INFO: copying config.yaml and assemblies.yaml
+INFO: removing wdir/upload-current symlink
+INFO: creating symlink wdir/upload-current -> wdir/upload-v3
+INFO: A new directory upload-v3 for data format version 3.0 has been created and the current config.yaml and assemblies.yaml have been copied there.
+      It is possible that you might need to update those files.
+      The old data is in a directory named upload_v? where ? is the old version number
+      Once ready you can re-run collator using the same command you just used.
+```
+
+After that just re-run your `collator` command and it will perform its work in the new directory it has created for the
+current version.
+
+If you successfully ran `collator` then the file `meta_collator.yaml` in your upload directory will contain a section like this:
 ```yaml
 xca_git_info:
   origin_url: git@github.com:xchem/xchem-align.git
@@ -773,7 +764,7 @@ xca_git_info:
   dirty: false
 ```
 This uniquely identifies the version of the code. Please report this if there is any doubt about the version being used.
-If you can't run *collator* then the same info can be generated using: `python -m xchemalign.repo_info`
+If you can't run `collator` then the same info can be generated using: `python -m xchemalign.repo_info`
 
 ### Missing PanDDA Event Files Warning When You Have Event Maps
 
@@ -871,6 +862,46 @@ inputs:  # The datasources to collate
     type: manual
 
 ```
+
+#### Ligand definition
+
+The definition of what is considered to be a ligand is driven by the contents of the CIF file. For each crystal there
+must be a single CIF file (referenced in SoakDB) and it must contain all the molecules that you want to be considered as
+ligands. Typically there will be a single molecule, but it is possible (e.g. for combi-soaks) for there to be multiple
+ones. An example can be found [here](content/CHIKV_MacB-x1739.cif). That CIF defines 3 ligands, named LIG, LG1 and LG2.
+These must be defined in the `data_comp_list` block. Whatever is defined there is extracted out from its own
+`data_comp_LG1` block (corresponding to the ligand name). The precise names of the ligand are not important, but it is
+useful to follow a convention of using the name `LIG` if there is only one ligand, and using the names `LG1`, `LG2`, ...
+if there are multiple ligands (the example file does not quite follow tht convention).
+
+Those molecules are written to the metadata and are used to drive the XCA process. The metadata now looks like this:
+```yaml
+      ligand_cif:
+        file: upload_1/crystallographic_files/CHIKV_MacB-x1739/CHIKV_MacB-x1739.cif
+        sha256: d0556ef2b0c3bd065be7d29a3b37698bd1cb099a5122cb27f6fa6a75231a2a98
+        source_file: data/lb32633-6/inputs/dls/labxchem/data/lb32633/lb32633-6/processing/analysis/model_building/CHIKV_MacB-x1739/merged.cif
+        ligands:
+          LG1: {smiles: 'Cc1cn[nH]c1-c1ccncc1'}
+          LG2: {smiles: Nc1nnc2ccccn12}
+          LIG: {smiles: O=C1NCCN1}
+```
+Note how multiple ligands can be present.
+
+Another thing to consider here is the definition of those ligands in the PDB file. The same ligand names as are in the
+CIF file must be used. Also, check the chain assignment of the ligands. Sometimes they are assigned to the wrong
+chain.
+
+When there are multiple ligands present the data for the `CompoundCode` and `CompoundSMILES` columns in soakDB must
+correspond to those molecules.
+
+For `CompoundCode` the codes must be semi-colon separated and must be in the same order as in the CIF file. So for the
+above example the value would look like this: `code_for_lg1;code_for_lg2;code_for_lig`. If the number of values does
+not match the number of molecules in the CIF file then an error is thrown.
+
+For `CompoundSMILES` the same applies - semi-colon separated and the same order. But in the case that the soaked
+compound is different to the modeled one the soaked one can also be specified according to the following:
+`smiles1;smiles2 smiles3;smiles4`. In this case the second molecule (LG2) has a modeled SMILES of smiles2 and a
+soaked SMILES of smiles3. Only use space to separate the modeled and soaked SMILES.
 
 # Staging deployment
 
