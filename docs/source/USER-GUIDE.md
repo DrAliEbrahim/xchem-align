@@ -56,15 +56,19 @@ For XCA tools to run correctly they require a specific directory structure. To e
 
 To set this up:
 
-1. Create a working directory e.g. `mkdir xchem-align`
-2. `cd` into your working directory (or use the `-d` arguments when you run `collator` and `aligner`)
-3. Run `xchemalign.collator` - it will notice that the working directory has not been initialised, creating an `upload-v?` directory with an `upload-current` symbolic link, and dummy `config.yaml` and `assemblies.yaml` files:
+1. Create a working directory
+
+```commandline
+mkdir xchem-align
+```
+
+2. Run `xchemalign.collator` (If you are already in your working dir you can leave out `-d <your working dir>`)
 
 ```commandline
 python -m xchemalign.collator -d <your working dir>
 ```
 
-If you are already in your working dir you can leave out `-d <your working dir>`.
+`collator` will notice that the working directory has not been initialised, creating an `upload-v3` directory with an `upload-current` symbolic link, and dummy `config.yaml` and `assemblies.yaml` files.
 
 When running `collator` for the first time you will see something like this if the working directory needs to be
 initialised:
@@ -83,75 +87,85 @@ INFO: Then you can run collator like this (omit the -d argument if you are alrea
       python -m xchemalign.collator -d wdir
 ```
 
-**NOTE**: Starting in Dec 2024, XChemAlign implemented a more formal approach to the data that it generates. XCA handles all of this automatically. If you think you're experiencing versioning issues please [read this extra information](#version-of-the-code).
+Your final directory structure should look something like this:
 
-### 2.2. The Config Yaml
+```
+working-directory / upload-current
+                  / upload-v3 / upload_1
+                              / config.yaml
+                              / assemblies.yaml
+```
+
+**NOTE**: `v3` in `upload-v3` indicates the major version of XCA that is being used. Starting in Dec 2024, XCA implemented a more formal approach to versioning and the data that it generates. XCA handles all of this automatically. If you think you're experiencing versioning issues please [read this extra information](#version-of-the-code).
+
+### 2.2. The Config YAML
 
 Next we need to declare things using the `config.yaml` and `assemblies.yaml` files.
 
-The config yaml defines what data to collect for collation. This includes raw crystallographic data, PanDDA data and ligand information.
-
-Working with YAML files can be difficult at first. Free tools such as [yamlchecker.com](https://yamlchecker.com) may help you learn and check the syntax.
-
-Here is an example YAML file which can be downloaded [here]. A blank version can be downloaded [here].
+The `config.yaml` defines what data to collect for collation. This includes raw crystallographic data, PanDDA data and ligand information:
 
 ```yaml
 # DO NOT USE TABS FOR THE WHITESPACE!
 
-target_name: Mpro        # The name of your target. If adding to data already on Fragalysis, use that 'target'
+target_name: Mpro                              # The name of your target. If adding to data already on Fragalysis, use the fragalysis target name
 
-base_dir: /                                  # All _inputs_ are relative to this directory. This is usually '/' (certainly at Diamond)
+base_dir: /                                    # All _inputs_ are relative to this directory. This is usually '/' (certainly at Diamond)
 
-extra_files_dir: path/to/extra_files         # Optional directory where your extra files are located. Defaults to extra_files in the current version directory
+ref_datasets:                                  # List of datasets with reference conformations; these get aligned to every canonical site 
+  - Mpro-IBM0045                               # You generally want at least one for each major class of conformation
+  - Mpro-IBM0175                               # Provide here the crystal ids as they appear in the model_building or reference directories
 
-ref_datasets:        # List of datasets with reference conformations; these get aligned to every canonical site. You generally want at least one for each major class of conformation
-  - Mpro-IBM0045     # Provide here the crystal ids as they appear in the model_building or reference directories
-  - Mpro-IBM0175
+panddas_missing_ok: [ Mpro-x0089, Mpro-x0211 ] # Optional. Crystals for which XCA should ignore that event maps are missing
 
-panddas_missing_ok: [ Mpro-x0089, Mpro-x0211 ]    # Crystals for which XCA should ignore that event maps are missing.
+inputs:                                        # The datasources to collate
 
-inputs:        # The datasources to collate
+  - dir: dls/labxchem/data/2020/lb27995-1      # The visit directory; assumes processing/analysis/model_building is present
+                                               # Path is relative to 'base_dir'
 
-  - dir: dls/labxchem/data/2020/lb27995-1   # The visit directory; assumes processing/analysis/model_building is present
-                                            # Path is relative to 'base_dir'.
+       type: model_building                    # "model_building" indicates this is Diamond XChem data
 
-       type: model_building             # "model_building" indicates this is XChem data
-
-       code_prefix: m                            # prepend "m" to the code, e.g. mx0325a (instead of x0325a)  (ignored by XCA)
+       code_prefix: m                          # prepend "m" to the code, e.g. mx0325a (instead of x0325a)  (ignored by XCA)
        
-       code_prefix_tooltip: MERS structures      # for fragalysis to display in the tooltip for short code (ignored by XCA)
+       code_prefix_tooltip: MERS structures    # for fragalysis to display in the tooltip for short code (ignored by XCA)
 
-       soakdb: processing/database/soakDBDataFile.sqlite    # Optional path to the soakdb database relative to 'dir'. Defaults to processing/database/soakDBDataFile.sqlite
+       soakdb: processing/database/soakDBDataFile.sqlite  # Optional path to the soakdb database relative to 'dir'. Defaults to processing/database/soakDBDataFile.sqlite
 
-       exclude: [Mpro-IBM0057, Mpro-IBM0108]   # Datasets to be ignored (e.g. if buggy)
+       exclude: [Mpro-IBM0057, Mpro-IBM0108]   # Optional. Datasets to be ignored (e.g. if buggy)
 
-       covalent: true                          # Display covalent bonds in Fragalysis. Omit if no covalent bonds are present
+       covalent: true                          # Optional. Display covalent bonds in Fragalysis. Omit if no covalent bonds are present
 
-       panddas_event_files:         # List event csv tables written by pandda_inspect for all pandda runs. Path is relative to 'dir'.
+       panddas_event_files:                    # List event csv tables written by pandda_inspect for all pandda runs. Path is relative to 'dir'
          - processing/analysis/panddas/analyses/pandda_inspect_events.csv  
       
-       sequences:                           # Use FASTA format files to define the protein sequences
-        dir: processing/analysis/sequences  # Path is relative to 'dir'
-        default: default.fa                 # This sequence will be used unless the crystal is defined as a variant
+       sequences:                              # Use FASTA format files to define the protein sequences
+        dir: processing/analysis/sequences     # Path is relative to 'dir'
+        default: default.fa                    # This sequence will be used unless the crystal is defined as a variant
         variants:
-          - sequence: 2-chain.fa            # Individual crystals can have a different FASTA sequence
-            crystals:
+          - sequence: 2-chain.fa               # Individual crystals can have a different FASTA sequence
+            crystals:                          # If you have no variants, delete all lines to do with variants as opposed to being left blank
               - Mpro-x5226
               - Mpro-x5398
 
 
   - dir: dls/labxchem/data/lb32633/lb32633-6/processing/analysis/additional_pdbs_forXCA
-    type: manual       # "manual" indicates this is a non-diamond dataset. Each pdb file (cif!) and corresponding .mtz file are put in this dir.
+    type: manual                               # "manual" indicates this is a non-diamond dataset. Each pdb file (cif) and corresponding .mtz file are put in this dir.
+
+extra_files_dir: path/to/extra_files           # Optional. This directory is where your extra files are located. Defaults to extra_files in the current version directory
 ```
 
-Note that the `extra_files_dir`, `soakdb`, `exclude` and `panddas_missing_ok` items are optional, either
-having sensible default values or not necessarily needing values.
+This example YAML file can be downloaded [here]. A blank version can be downloaded [here]. Any datasets you specify in the `config.yaml`, including as references in `ref_datasets` must be found in one of the directories specified in `inputs`.
 
-Any datasets you specify in the `config.yaml`, including as references in `ref_datasets` must be found in one of the directories specified in `inputs`.
+Working with YAML files can be difficult at first. Free tools such as [yamlchecker.com](https://yamlchecker.com) may help you learn and check the syntax.
 
-#### Diamond Datasets
+Below further explains some of the `config.yaml` fields. If You're having issues please the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)
 
-For the inputs that are of type `model_building` (e.g. come from Diamond) the corresponding soakdb file is inspected
+#### Data types
+
+There are two types of data inputs that can be specified for XCA, `model_building` and `manual`
+
+##### model_building
+
+Inputs that are of type `model_building` come from Diamond and have a corresponding SoakDB file. When XCA is run the SoakDB files is inspected
 and, by default, crystals of the following status are considered:
 
 * 4 - CompChem ready
@@ -172,9 +186,12 @@ Also, this status is considered so that crystals in previous upload versions can
 Note that status 7 is always fetched so that deprecated entries can be identified. You do not need to specify it if
 you are using a `statuses` section as described above.
 
-#### Non-Diamond datasets
+There was previously a mechanism to manually override the status of any crystal. This feature has now been removed.
+Instead you should set the status in SoakDB to `7 - Analysed & Rejected`.
 
-Additional structures can be specified as an input of type `manual`. See the end of the above example.
+##### manual
+
+Additional non-diamond datasets can be specified as an input of type `manual`. See the end of the above example.
 The dir specified is relative to `base_dir`. In that directory you place the PDB file, the ligand CIF file, and any
 corresponding MTZ file, with the same base name and the .pdb and .mtz extensions. The base name is used for the name of the crystal (and is the
 name that will be used in Fragalysis, so choose sensible names here).
@@ -199,13 +216,48 @@ then 2 crystals will be processed and given the names 1ABC and 5XYZ. The second 
 So, currently, the ligand in the PDB file must be renamed to LIG (do not rename it in the CIF file). We expect to remove
 this limitation soon.
 
+#### Code Prefix
+
+`code_prefix` and `code_prefix_tooltip` are fields that allow you to distinguish this uploaded dataset.
+For example you may use `code_prefix` to specify a crystal construct. `code_prefix_tooltip` should be a string
+explaining the meaning of the prefix, this will be displayed in Fragalysis.
+`code_prefix` is necessary for inputs or type `model_building`, but can be an empty string: `""`.
+For inputs of type `manual` it is not needed as the names of the PDB files are used for display in Fragalysis.
+
+#### Covalent ligands
+
+The Fragalysis UI uses different molecules for displaying the protein and the ligand. This means it cannot render the
+bond for a covalent ligand. As a workaround for this XCA tag 2.1.7 (October 2024) introduced a feature where the
+protein atom (typically the sulphur of a cysteine) is grafted onto the ligand molecule. This means that in the
+Fragalysis UI the sulphur atom is present twice at exactly the same location (once for the protein, once for the
+grafted ligand). This gives the impression of the covalent bond being present, but this is a slight illusion.
+
+For this to happen the PDB file that is the input to XCA must contain `LINK` header records that define the covalent
+bond. For instance:
+```
+LINK         SG  CYS A 110                 C7  LIG A 201     1555   1555  2.21
+```
+This states that there is a covalent bond between the SG of CYS 110 in chain A and the C7 atom of the residue named LIG,
+which has a residue number of 201. The order of the atoms in the line does not matter (the LIG section can be first and
+the CYS section second), but the syntax MUST conform with the PDB file specification (see
+[here](https://www.wwpdb.org/documentation/file-format-content/format33/sect6.html#LINK)).
+
+XCA looks for all `LINK` records, selects only those involving the relevant ligand residue number (201 in the above
+example) and grafts the protein atom onto the ligand for each record (of course, usually there will only be a single
+one for each ligand).
+
+IMPORTANT: to enable this covalent ligand functionality you need to add this to your `config.yaml` file:
+```
+covalent: true
+```
+
 #### Sequence information
 
 In order to generate files for PDB deposition we need to specify the protein sequences.
 For each `type: model_building` section you must define the protein sequence information using a section like this:
 
 ```yaml
-    sequences:
+     sequences:
       dir: processing/analysis/sequences
       default: default.fa
       variants:
@@ -218,7 +270,9 @@ For each `type: model_building` section you must define the protein sequence inf
 This states that the sequence information is defined in FASTA format files. If all chains have the same sequence then
 you only need to define the `default` and that will be used for all. If some sequences are different of there are
 multiple chains (see below) then you will need to define and appropriate `variant` and state which crystals correspond
-to that variant.
+to that variant. 
+
+**NOTE** If you only have one sequence with no variants, all lines to do with variants should be deleted as opposed to left blank.
 
 The title of the FASTA record is used to define:
 1. the entity ID
@@ -258,7 +312,7 @@ If this information is found and is valid the sequences will be used:
 There is support for adding arbitrary extra files to the upload. These files are not used by Fragalysis but
 will be added to any downloads from Fragalysis.
 
-To add these either create a `extra_files` directory in your version directory (e.g `upload-v2`) or if they are located
+To add these either create a `extra_files` directory in your version directory (e.g `upload-v3`) or if they are located
 elsewhere specify this location with the `extra_files_dir` option in the config file. These files will be copied to your
 `upload_?` dir and included in the upload.
 
@@ -288,46 +342,6 @@ first column being the crystal name.
 We expect that a future version of Fragalysis will make these additional identifiers (compound aliases) visible in the
 UI. For now, they just appear in the downloaded files.
 
-#### Code Prefix
-
-`code_prefix` and `code_prefix_tooltip` are fields that allow you to distinguish this uploaded dataset.
-For example you may use `code_prefix` to specify a crystal construct. `code_prefix_tooltip` should be a string
-explaining the meaning of the prefix, this will be displayed in Fragalysis.
-`code_prefix` is necessary for inputs or type `model_building`, but can be an empty string: `""`.
-For inputs of type `manual` it is not needed as the names of the PDB files are used for display in Fragalysis.
-
-#### Covalent ligands
-
-The Fragalysis UI uses different molecules for displaying the protein and the ligand. This means it cannot render the
-bond for a covalent ligand. As a workaround for this XCA tag 2.1.7 (October 2024) introduced a feature where the
-protein atom (typically the sulphur of a cysteine) is grafted onto the ligand molecule. This means that in the
-Fragalysis UI the sulphur atom is present twice at exactly the same location (once for the protein, once for the
-grafted ligand). This gives the impression of the covalent bond being present, but this is a slight illusion.
-
-For this to happen the PDB file that is the input to XCA must contain `LINK` header records that define the covalent
-bond. For instance:
-```
-LINK         SG  CYS A 110                 C7  LIG A 201     1555   1555  2.21
-```
-This states that there is a covalent bond between the SG of CYS 110 in chain A and the C7 atom of the residue named LIG,
-which has a residue number of 201. The order of the atoms in the line does not matter (the LIG section can be first and
-the CYS section second), but the syntax MUST conform with the PDB file specification (see
-[here](https://www.wwpdb.org/documentation/file-format-content/format33/sect6.html#LINK)).
-
-XCA looks for all `LINK` records, selects only those involving the relevant ligand residue number (201 in the above
-example) and grafts the protein atom onto the ligand for each record (of course, usually there will only be a single
-one for each ligand).
-
-IMPORTANT: to enable this covalent ligand functionality you need to add this to your `config.yaml` file:
-```
-covalent: true
-```
-
-#### Overriding status
-
-There was previously a mechanism to manually override the status of any crystal. This feature has now been removed.
-Instead you should set the status is soakDB to `7 - Analysed & Rejected`.
-
 #### Forcing structures into an upload
 
 By default the collator decides each crystal's status by comparing the SHA256 of its PDB file against the previous
@@ -347,16 +361,116 @@ been rejected in soakDB remain `deprecated`.
 
 ### 2.3. The assemblies YAML
 
-This file specifies both the biological *assemblies* and *crystalforms* relative to some reference PDBs.
+The `assemblies.yaml` file tells XChemAlign how the protein chains in your crystal structures are organised into biological assemblies and how those assemblies occur in each crystal form.
+
+This information is used by XChemAlign when aligning structures from different crystal forms. In particular, it allows XChemAlign to distinguish between the **biological assembly** of a protein and the **individual copies** of that assembly present in a crystal structure, relative to a **reference pdb**.
+
 YAML has a strict formatting specification. Make sure to use spaces and not tabs for whitespace.
-The diagram below illustrates the format of the assemblies.yaml file:
+The diagram below illustrates the format of the `assemblies.yaml` file:
 
 ![assemblies-yaml-example](https://github.com/xchem/xchem-align/assets/36866506/5c3ad74e-b1ff-4f44-8adb-3a76fbdc42b3)
 
-An example file can be found [here](test-data/outputs/upload-v2/assemblies.yaml). The `biomol` and `chains` directives specify
-the mapping between chains in the PDB file (`chains`) to chains in the assembly (`biomol`).
-i.e. in the example above the assembly "dimer-inhibited" is formed of three chains **A,B,C** which correspond to chains
-**C,E,A** in the **largecellpdb**.
+An `assemblies.yaml` file contains two sections:
+
+- `assemblies` — defines the **biological assembly or assemblies** present within the data to be aligned
+- `crystalforms` — defines the **crystal forms** being processed, **specifying which assemblies occur in each crystal form**
+
+The following example defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
+
+```yaml
+assemblies:
+    monomer:
+        reference: model_1
+        biomol: A
+        chains: A
+crystalforms:
+    crystalform_1:
+        reference: model_1
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A 
+    crystalform_2:
+        reference: model_2
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A
+            assembly_2:
+                assembly: monomer
+                chains: B
+```
+
+This describes the following:
+- `monomer` is the user-defined name given to the biological assembly
+- The assembly is defined using the structure `model_1`
+- The assembly contains one chain, `A`
+- `crystalform_1` contains one copy of the monomer, corresponding to chain `A`
+- `crystalform_2` contains two copies of the monomer, corresponding to chains `A` and `B`
+
+**NOTE**: the names `monomer`, `crystalform_1`, `crystalform_2`, `A` and `B` are user-defined identifiers. They can be changed to appropriate names for your project.
+
+Assemblies can contain more than one chain. For example, the following defines a protein that is a dimer containing two chains:
+
+```yaml
+assemblies:
+    dimer:
+        reference: model_3
+        biomol: A,B
+        chains: A,B
+crystalforms:
+    crystalform_3:
+        reference: model_3
+        assemblies:
+            dimer_assembly_A_B:
+                assembly: dimer
+                chains: A,B
+```
+The following example combines multiple assembly types and multiple assembly instances. In this example, `model_3` contains two copies of the dimeric assembly, represented by chains `A`,`B` and `C`,`D`.
+
+```yaml
+assemblies:
+    monomer:
+        reference: model_1
+        biomol: A
+        chains: A
+    dimer:
+        reference: model_3
+        biomol: A,B
+        chains: A,B
+crystalforms:
+    crystalform_1:
+        reference: model_1
+        assemblies:
+            monomer_assembly:
+                assembly: monomer
+                chains: A
+    crystalform_2:
+        reference: model_2
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A
+            assembly_2:
+                assembly: monomer
+                chains: B
+    crystalform_3:
+        reference: model_3
+        assemblies:
+            dimer_assembly_A_B:
+                assembly: dimer
+                chains: A,B
+    crystalform_4:
+        reference: model_3
+        assemblies:
+            dimer_assembly_A_B:
+                assembly: dimer
+                chains: A,B
+            dimer_assembly_C_D:
+                assembly: dimer
+                chains: C,D
+```
+In `crystalform_4`, the dimer assembly defined at the top of the file is reused for a second assembly instance, this time corresponding to chains `C` and `D`. The names `dimer_assembly_A_B` and `dimer_assembly_C_D` identify the individual assembly instances and are user-defined.
 
 ### 2.4 Example configs
 
