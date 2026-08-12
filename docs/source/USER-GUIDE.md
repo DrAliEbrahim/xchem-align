@@ -365,17 +365,14 @@ The `assemblies.yaml` file tells XChemAlign how the protein chains in your cryst
 
 This information is used by XChemAlign when aligning structures from different crystal forms. In particular, it allows XChemAlign to distinguish between the **biological assembly** of a protein and the **individual copies** of that assembly present in a crystal structure, relative to a **reference pdb**.
 
-YAML has a strict formatting specification. Make sure to use spaces and not tabs for whitespace.
-The diagram below illustrates the format of the `assemblies.yaml` file:
-
-![assemblies-yaml-example](https://github.com/xchem/xchem-align/assets/36866506/5c3ad74e-b1ff-4f44-8adb-3a76fbdc42b3)
-
 An `assemblies.yaml` file contains two sections:
 
 - `assemblies` — defines the **biological assembly or assemblies** present within the data to be aligned
 - `crystalforms` — defines the **crystal forms** being processed, **specifying which assemblies occur in each crystal form**
 
 The following example defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
+
+<img src="_static/media/crystal_form_1_2.png" alt="lhs" width="600px">
 
 ```yaml
 assemblies:
@@ -412,6 +409,8 @@ This describes the following:
 
 Assemblies can contain more than one chain. For example, the following defines a protein that is a dimer containing two chains:
 
+<img src="_static/media/crystal_form_3.png" alt="lhs" width="600px">
+
 ```yaml
 assemblies:
     dimer:
@@ -427,6 +426,8 @@ crystalforms:
                 chains: A,B
 ```
 The following example combines multiple assembly types and multiple assembly instances. In this example, `model_3` contains two copies of the dimeric assembly, represented by chains `A`,`B` and `C`,`D`.
+
+<img src="_static/media/crystal_forms.png" alt="lhs" width="600px">
 
 ```yaml
 assemblies:
