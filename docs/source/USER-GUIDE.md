@@ -365,14 +365,51 @@ The `assemblies.yaml` file tells XChemAlign how the protein chains in your cryst
 
 This information is used by XChemAlign when aligning structures from different crystal forms. In particular, it allows XChemAlign to distinguish between the **biological assembly** of a protein and the **individual copies** of that assembly present in a crystal structure, relative to a **reference pdb**.
 
-An `assemblies.yaml` file contains two sections:
-
+An `assemblies.yaml` file contains two sections with a number of fields:
 - `assemblies` — defines the **biological assembly or assemblies** present within the data to be aligned
-- `crystalforms` — defines the **crystal forms** being processed, **specifying which assemblies occur in each crystal form**
+  - `reference` — a reference PDB structure 
+  - `biomol` — chain identifiers used within the biological assembly definition.
+  - `chains` — corresponding chain identifiers in the reference PDB structure.
+- `crystalforms` — defines the **crystal forms** being processed, **specifying which assemblies occur in a specific space group**
 
-The following example defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
+#### 2.3.1. Example 1
 
-<img src="_static/media/crystal_form_1_2.png" alt="lhs" width="600px">
+This simple example YAML defines a protein that is a monomer, occuring as one copy in different crystal forms:
+
+<img src="_static/media/crystal_form_example.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+
+```yaml
+assemblies:
+    monomer:
+        reference: model_1
+        biomol: A
+        chains: A
+crystalforms:
+    crystalform_1:
+        reference: model_1
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A 
+    crystalform_2:
+        reference: model_2
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A
+```
+This `assemblies.yaml` describes the following:
+- `monomer` is the user-defined name given to the assembly containing chain `A`and has a reference structure `model_1`
+- `crystalform_1` is defined using the space group from reference structure `model_1`. It contains one `monomer` assembly, corresponding to `model_1` chain `A` 
+- `crystalform_2` is defined using the space group from reference structure `model_2`. It contains one `monomer` assembly, corresponding to `model_2` chain `A` 
+
+**NOTE**: the names `monomer`, `crystalform_1`, `crystalform_2` and `assembly_1` are user-defined identifiers. `model_*` corresponds directly to a reference PDB file. They can be changed to appropriate names for your project.
+
+#### 2.3.2. Example 2
+
+The following example YAML defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
+
+<img src="_static/media/crystal_form_example_1.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
 
 ```yaml
 assemblies:
@@ -398,71 +435,59 @@ crystalforms:
                 chains: B
 ```
 
-This describes the following:
-- `monomer` is the user-defined name given to the biological assembly
-- The assembly is defined using the structure `model_1`
-- The assembly contains one chain, `A`
-- `crystalform_1` contains one copy of the monomer, corresponding to chain `A`
-- `crystalform_2` contains two copies of the monomer, corresponding to chains `A` and `B`
+This `assemblies.yaml` describes the following:
+- `monomer` is the user-defined name given to the assembly containing chain `A` and has a reference structure `model_1`
+- `crystalform_1` is defined using the space group from reference structure `model_1`. It contains one `monomer` assembly, corresponding to `model_1` chain `A`
+- `crystalform_2` is defined using the space group from reference structure `model_2`. It contains two `monomer` assemblies, corresponding to `model_2` chains `A` and `B`
 
-**NOTE**: the names `monomer`, `crystalform_1`, `crystalform_2`, `A` and `B` are user-defined identifiers. They can be changed to appropriate names for your project.
+#### 2.3.3. Example 3
 
-Assemblies can contain more than one chain. For example, the following defines a protein that is a dimer containing two chains:
+This next example YAML defines a protein that is a trimer, whereby the assembly contains more than one chain:
 
-<img src="_static/media/crystal_form_3.png" alt="lhs" width="600px">
+<img src="_static/media/crystal_form_example_2.png" alt="lhs" width="400px" style="display:block; margin-left:auto; margin-right:auto;">
 
 ```yaml
 assemblies:
-    dimer:
+    trimer:
         reference: model_3
-        biomol: A,B
-        chains: A,B
-crystalforms:
-    crystalform_3:
-        reference: model_3
-        assemblies:
-            dimer_assembly_A_B:
-                assembly: dimer
-                chains: A,B
-```
-The following example combines multiple assembly types and multiple assembly instances. In this example, `model_3` contains two copies of the dimeric assembly, represented by chains `A`,`B` and `C`,`D`.
-
-<img src="_static/media/crystal_forms.png" alt="lhs" width="600px">
-
-```yaml
-assemblies:
-    monomer:
-        reference: model_1
-        biomol: A
-        chains: A
-    dimer:
-        reference: model_3
-        biomol: A,B
-        chains: A,B
+        biomol: A,B,C
+        chains: A,B,C
 crystalforms:
     crystalform_1:
-        reference: model_1
-        assemblies:
-            monomer_assembly:
-                assembly: monomer
-                chains: A
-    crystalform_2:
-        reference: model_2
-        assemblies:
-            assembly_1:
-                assembly: monomer
-                chains: A
-            assembly_2:
-                assembly: monomer
-                chains: B
-    crystalform_3:
         reference: model_3
+        assemblies:
+            trimer_assembly_A_B_C:
+                assembly: trimer
+                chains: A,B,C
+```
+This `assemblies.yaml` describes the following:
+- `trimer` is the user-defined name given to the assembly containing chains `A`,`B` and `C`, and has the reference structure `model_3`
+- `crystalform_1` is defined using space group from reference structure `model_3`. It contains one `trimer` assembly, corresponding to `model_3` chains `A`, `B` and `C`
+
+#### 2.3.4. Example 4
+This example YAML defines a protein that is a dimer, but crystallises as both a dimer with multiple crystal forms and a monomer with multiple crystal forms:
+
+<img src="_static/media/crystal_form_example_3.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+
+```yaml
+assemblies:
+    dimer:
+        reference: model_4
+        biomol: A,B
+        chains: A,B
+    monomer:
+        reference: model_4
+        biomol: A
+        chains: A
+crystalforms:
+    crystalform_1:
+        reference: model_4
         assemblies:
             dimer_assembly_A_B:
                 assembly: dimer
                 chains: A,B
-    crystalform_4:
-        reference: model_3
+    crystalform_2:
+        reference: model_5
         assemblies:
             dimer_assembly_A_B:
                 assembly: dimer
@@ -470,14 +495,31 @@ crystalforms:
             dimer_assembly_C_D:
                 assembly: dimer
                 chains: C,D
+    crystalform_3:
+        reference: model_6
+        assemblies:
+            monomer_assembly_A:
+                assembly: monomer
+                chains: A
+    crystalform_4:
+        reference: model_7
+        assemblies:
+            monomer_assembly_A:
+                assembly: monomer
+                chains: A
+            monomer_assembly_B:
+                assembly: monomer
+                chains: B
 ```
-In `crystalform_4`, the dimer assembly defined at the top of the file is reused for a second assembly instance, this time corresponding to chains `C` and `D`. The names `dimer_assembly_A_B` and `dimer_assembly_C_D` identify the individual assembly instances and are user-defined.
+This `assemblies.yaml` describes the following:
+- `dimer` is the user-defined name given to the assembly containing chains `A` and `B`, and has the reference structure `model_4`
+- `monomer` is the user-defined name given to the assembly containing chain `A`, also using the reference structure `model_4`
+- `crystalform_1` is defined using the space group from reference structure `model_4`. It contains one `dimer` assembly, corresponding to `model_4` chains `A` and `B`
+- `crystalform_2` is defined using the space group from reference structure `model_5`. It contains one `dimer` assembly, corresponding to `model_5` chains `C` and `D`
+- `crystalform_3` is defined using the space group from reference structure `model_6`. It contains one `monomer` assembly, corresponding to `model_6` chain `A`
+- `crystalform_4` is defined using the space group from reference structure `model_7`. It contains two `monomer` assemblies, corresponding to `model_7` chains `A` and `B`
 
-### 2.4 Example configs
-
-Here are some example configs that you can look at and run to hel get your head round how all this works.
-
-#### 2.4.1 Minimal simple example.
+### 2.4. Minimal simple example.
 
 This example illustrates only the minimal required configuration.
 You will probably need to use additional configuration features, but this should help you understand the basics.
@@ -497,7 +539,7 @@ You can run XChemAlign with this data using the instructions in the example-simp
 
 TODO - create a more complex example.
 
-### 2.5 Validation of config.yaml and assemblies.yaml
+### 2.5. Validation of config.yaml and assemblies.yaml
 
 Since June 2025 functionality was added to check the structure of the `config.yaml` and `assemblies.yaml`.
 This happens when you run `collator` and checks their contents against what is expected and will throw an error if
