@@ -359,7 +359,7 @@ An `assemblies.yaml` file contains two sections with a number of fields:
 
 This simple example YAML defines a protein that is a monomer, occuring as one copy in different crystal forms:
 
-<img src="_static/media/crystal_form_example.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+<img src="_static/media/crystal_form_example_A.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
 
 ```yaml
 assemblies:
@@ -392,7 +392,7 @@ This `assemblies.yaml` describes the following:
 
 This next example YAML defines a protein that is a trimer, whereby the assembly contains more than one chain:
 
-<img src="_static/media/crystal_form_example_2.png" alt="lhs" width="400px" style="display:block; margin-left:auto; margin-right:auto;">
+<img src="_static/media/crystal_form_example_C.png" alt="lhs" width="400px" style="display:block; margin-left:auto; margin-right:auto;">
 
 ```yaml
 assemblies:
@@ -416,7 +416,7 @@ This `assemblies.yaml` describes the following:
 
 The following example YAML defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
 
-<img src="_static/media/crystal_form_example_1.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+<img src="_static/media/crystal_form_example_B.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
 
 ```yaml
 assemblies:
@@ -452,7 +452,7 @@ Despite there being two assemblies in `crystalform_2`, only a **single assembly*
 #### 2.3.4. Example 4
 This example YAML defines a protein that is a dimer with multiple crystal forms. The second crystal form has dimer `AB` inhibited byHere XCA can map to **two assemblies**:
 
-<img src="_static/media/crystal_form_example_5.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+<img src="_static/media/crystal_form_example_D.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
 
 ```yaml
 assemblies:
@@ -492,7 +492,7 @@ This `assemblies.yaml` describes the following:
 
 By using **two assemblies**, XCA will map assemblies independently allowing different assembly definitions to be represented within the same crystal form. In this example, the `dimer` and `dimer_inhibited` crystal form assemblies are mapped to their corresponding reference chains in `model_5`, with two separate instances of the `dimer_inhibited` crystal form assembly, allowing XCA to account for different structural states or compositions within the same crystal form.
 
-### 2.4. Minimal simple example.
+### 2.4. Minimal simple example
 
 This example illustrates only the minimal required configuration.
 You will probably need to use additional configuration features, but this should help you understand the basics.
