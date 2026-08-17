@@ -450,7 +450,7 @@ This `assemblies.yaml` describes the following:
 Despite there being two assemblies in `crystalform_2`, only a **single assembly** is needed as XCA will map chains `A` and `B` in `crystalform_2` onto chain `A` from the reference assembly `monomer`. 
 
 #### 2.3.4. Example 4
-This example YAML defines a protein that is a dimer with multiple crystal forms. The second crystal form has dimer `AB` inhibited byHere XCA can map to **two assemblies**:
+This example YAML defines a protein that is a dimer with multiple crystal forms and assemblies. The first crystal form has a dimeric assembly consisting of two chains `A` and `B`. The second crystal form contains dimeric assemblies that are inhibited by a single chain from a neighbouring dimer, making a functional assembly consisting of three chains `A`, `B` and `C`. Here XCA can map crystal forms to **two assemblies**:
 
 <img src="_static/media/crystal_form_example_D.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
 
@@ -490,14 +490,14 @@ This `assemblies.yaml` describes the following:
 - `crystalform_1` is defined using the space group from reference structure `model_4`. It contains one `dimer` assembly, corresponding to `model_4` chains `A` and `B`
 - `crystalform_2` is defined using the space group from reference structure `model_5`. It contains one `dimer` assembly, corresponding to `model_5` chains `A` and `B`. It also contains two `dimer_inhibited` assemblies. Here, dimer `CD` is inhibited by chain `A` in dimer `AB`, so corresponds to `model_5` chains `C`, `D`, `A`. Dimer `EF` is inhibited by chain `B` in dimer `AB`, so corresponds to `model_5` chains `B`, `E`, `F`. 
 
-By using **two assemblies**, XCA will map assemblies independently allowing different assembly definitions to be represented within the same crystal form. In this example, the `dimer` and `dimer_inhibited` crystal form assemblies are mapped to their corresponding reference chains in `model_5`, with two separate instances of the `dimer_inhibited` crystal form assembly, allowing XCA to account for different structural states or compositions within the same crystal form.
+By using **two assemblies**, XCA will map assemblies independently allowing different assembly definitions to be represented within the same crystal form. In this example, the `dimer` and `dimer_inhibited` crystal form assemblies are mapped to their corresponding reference chains in `model_5` with two separate instances of the `dimer_inhibited` crystal form assembly, allowing XCA to account for different structural states or compositions within the same crystal form.
 
 ### 2.4. Minimal simple example
 
 This example illustrates only the minimal required configuration.
 You will probably need to use additional configuration features, but this should help you understand the basics.
 
-The example is contained in the file `example-simple.tgz`. Expand this file using:
+The example is contained in the file [`example-simple.tgz`](../../example-simple.tgz). Expand this file using:
 
 ```commandline
 tar xvfz example-simple.tgz
@@ -526,7 +526,7 @@ If your working dir has not already been initialised then this will be done for 
 Once complete create the `config.yaml` and `assemblies.yaml` as described above and run collator again.
 Collator will now prepare your files ready for alignment.
 
-Warning: collation can take a long time, please be patient.
+>**Note**: collation can take a long time, please be patient.
 
 ---
 
@@ -540,17 +540,17 @@ python -m xchemalign.aligner -d <your working directory>
 
 Again, skip the `-d <your working directory>` bit if you are already in that dir.
 
-Warning: aligner can take an even longer time, please be patient.
+>**Note**: the aligner can take an even longer time, please be patient.
 
 ### 4.1 Using the Slurm cluster
 
-When aligning a very large number of datasets (500+) at Diamond, the aligner job can fail with a `MemoryError`. To overcome this, `xchemalign.aligner` can be run on the Diamond Slurm cluster *Wilson* using a simple bash script.
+When aligning a large number of datasets (100+) at Diamond, the aligner job can fail with a `MemoryError`. To overcome this, `xchemalign.aligner` can be run on the Diamond Slurm cluster *Wilson* using a simple bash script.
 
 ---
 
 #### Creating the submission script
 
-Using a text editor, create `aligner.sh` in your working directory (`upload-current`). For example, using Vim:
+Using a text editor, create `aligner.sh` in your working directory. For example, using Vim:
 
 ```bash
 vim aligner.sh
@@ -637,7 +637,11 @@ More information:
 
 ## 5. Upload to Fragalysis
 
-**Staging vs production: there are two live versions of Fragalysis. "Staging" is used for testing and is in constant development, therefore it may be buggier and/or have new features with respect to "production" which is the stable and public deployment. You should test if your upload works in staging, and verify that the data has been uploaded correctly before uploading to production. Data in staging is "at risk" as we may have to wipe the data occassionally for development reasons.**
+[Fragalysis](https://fragalysis.readthedocs.io/en/latest/) is a powerful web-based interface used to easily visualise, analyse, and curate experimental and virtual fragment-screening data from inside your browser.
+
+There are two live versions of Fragalysis, **staging** and **production**. Staging is used for testing and is in constant development, therefore it may be buggier and/or have new features with respect to production which is the stable and public deployment. You should typically always test if your upload works first in staging. Once you have verified that the data has been uploaded correctly you can upload to production. 
+
+>**Note**: data in staging is **"at risk"** as we may have to wipe the data occassionally for development reasons. Please do not intend to use staging for long term data storage.
 
 ### 5.1. Uploading with the XCA uploader tool
 
