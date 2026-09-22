@@ -1,11 +1,20 @@
 # XChemAlign User Guide
 
-XChemAlign(XCA) is a small suite of tools for preparing PDB models for loading into [Fragalysis](https://fragalysis.diamond.ac.uk/) to assist and simplify analysis of ligand-bound crystallographic data:
+XChemAlign (XCA) is a small suite of tools for preparing PDB models for loading into [Fragalysis](https://fragalysis.diamond.ac.uk/) to assist and simplify analysis of ligand-bound crystallographic data:
 
 * It formalises sites and packing artefacts across crystal forms and conformations, aligning models, maps and artefacts to common origins for each binding site.
 * It handles model updates and multiple repeat experiments (e.g. to resolve stereochemistry).
 * It allows for fast release cycles through supporting incremental updates.
 * It assists efficient curation of auto-identified features, by running fast and on the minimal set of files in any given iteration.
+
+Beyond these technical functions, XCA’s greatest strength is its ability to facilitate the rapid and efficient sharing of vast amounts of data with collaborators. Running XCA for the first time can seem daunting as there are numerous interlocking parts that all need to be right at the same time for the full process to work. Using this user guide should make this process more streamlined. Outlined below are some key XCA concepts:
+- You need to tell XCA how various crystal forms pack the biologically relevant conformations - captured in a file called `assemblies.yaml`. 
+- You need to tell XCA where all the data files are, which things to actually align or ignore, what additional things should be called once it's been stacked together. This happens in a file called `config.yaml`.
+- XCA helps you with data versioning: which data are new, which are updates, which existing data are wrong and should be hidden.
+- XCA will flush out inconsistencies; as crystallographic data is infinitely diverse, things may go wrong in unexpected ways. Expect to deep-dive into your data! Chances are you may need help from experienced users (the XChem and OpenBind teams can always help via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)).
+- XCA allows you to set up very complex labelling and manage compound IDs for Fragalysis.
+- Uploading data to the Fragalysis "staging" server allows you to check visually whether XCA performed as expected. Its not uncommon to spot problems once the data is uploaded to Fragalysis for visual inspection. This inevitaby means you may need multiple attempts, including rerunning XCA or fixing other files.
+- Once you're comfortable you;ve got everything right, you'll send your upload to the Fraglysis "production" server. **Your data does not need to be perfect** - there are always opportunities to fix files, re-align and re-upload at a later date!
 
 ---
 
@@ -98,7 +107,165 @@ working-directory / upload-current
 
 > **Note**: `v3` in `upload-v3` indicates the major version of XCA that is being used. Starting in Dec 2024, XCA implemented a more formal approach to versioning and the data that it generates. XCA handles all of this automatically. If you think you're experiencing versioning issues please [read this extra information](#version-of-the-code).
 
-### 2.2. The Config YAML
+---
+
+### 2.2. The assemblies YAML
+
+The `assemblies.yaml` file tells XChemAlign how the protein chains in your crystal structures are organised into biological assemblies and how those assemblies occur in each crystal form.
+
+This information is used by XChemAlign when aligning structures from different crystal forms. In particular, it allows XChemAlign to distinguish between the **biological assembly** of a protein and the **individual copies** of that assembly present in a crystal structure, relative to a **reference pdb**. 
+
+An `assemblies.yaml` file contains two sections with a number of fields:
+- `assemblies` — defines the **biological assembly or assemblies** present within the data to be aligned
+  - `reference` — a reference PDB structure 
+  - `biomol` — chain identifiers used within the biological assembly definition
+  - `chains` — corresponding chain identifiers in the reference PDB structure
+- `crystalforms` — defines the **crystal forms** being processed, **specifying which assemblies occur in a specific space group**
+
+> **Note**: As [mentioned above](#22-the-config-yaml), reference datasets must be specified in the `config.yaml` under `ref_datasets`, and must be found in one of the directories specified in `inputs`.
+
+#### 2.2.1. Example 1
+
+This simple example YAML defines a protein that is a monomer, occuring as one copy in different crystal forms:
+
+<img src="_static/media/crystal_form_example_A.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+
+```yaml
+assemblies:
+    monomer:
+        reference: model_1
+        biomol: A
+        chains: A
+crystalforms:
+    crystalform_1:
+        reference: model_1
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A 
+    crystalform_2:
+        reference: model_2
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A
+```
+This `assemblies.yaml` describes the following:
+- `monomer` is the user-defined name given to the assembly containing chain `A` and has a reference structure `model_1`
+- `crystalform_1` is defined using the space group from reference structure `model_1`. It contains one `monomer` assembly, corresponding to `model_1` chain `A` 
+- `crystalform_2` is defined using the space group from reference structure `model_2`. It contains one `monomer` assembly, corresponding to `model_2` chain `A` 
+
+> **Note**: the names `monomer`, `crystalform_1`, `crystalform_2` and `assembly_1` are user-defined identifiers. `model_*` corresponds directly to a reference PDB file. They can be changed to appropriate names for your project. 
+
+For a comprehensive explanation of the YAML configuration and keywords see the [yaml keywords](yaml-keywords.md) documentation.
+
+#### 2.2.2. Example 2
+
+This next example YAML defines a protein that is a trimer, whereby the assembly contains more than one chain:
+
+<img src="_static/media/crystal_form_example_C.png" alt="lhs" width="400px" style="display:block; margin-left:auto; margin-right:auto;">
+
+```yaml
+assemblies:
+    trimer:
+        reference: model_3
+        biomol: A,B,C
+        chains: A,B,C
+crystalforms:
+    crystalform_1:
+        reference: model_3
+        assemblies:
+            trimer_assembly_A_B_C:
+                assembly: trimer
+                chains: A,B,C
+```
+This `assemblies.yaml` describes the following:
+- `trimer` is the user-defined name given to the assembly containing chains `A`,`B` and `C`, and has the reference structure `model_3`
+- `crystalform_1` is defined using space group from reference structure `model_3`. It contains one `trimer` assembly, corresponding to `model_3` chains `A`, `B` and `C`
+
+#### 2.2.3. Example 3
+
+The following example YAML defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
+
+<img src="_static/media/crystal_form_example_B.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+
+```yaml
+assemblies:
+    monomer:
+        reference: model_1
+        biomol: A
+        chains: A
+crystalforms:
+    crystalform_1:
+        reference: model_1
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A 
+    crystalform_2:
+        reference: model_2
+        assemblies:
+            assembly_1:
+                assembly: monomer
+                chains: A
+            assembly_2:
+                assembly: monomer
+                chains: B
+```
+
+This `assemblies.yaml` describes the following:
+- `monomer` is the user-defined name given to the assembly containing chain `A` and has a reference structure `model_1`
+- `crystalform_1` is defined using the space group from reference structure `model_1`. It contains one `monomer` assembly, corresponding to `model_1` chain `A`
+- `crystalform_2` is defined using the space group from reference structure `model_2`. It contains two `monomer` assemblies, corresponding to `model_2` chains `A` and `B`
+
+Despite there being two assemblies in `crystalform_2`, only a **single assembly** is needed as XCA will map chains `A` and `B` in `crystalform_2` onto chain `A` from the reference assembly `monomer`. 
+
+#### 2.2.4. Example 4
+This example YAML defines a protein that is a dimer with multiple crystal forms and assemblies. The first crystal form has a dimeric assembly consisting of two chains `A` and `B`. The second crystal form contains dimeric assemblies that are inhibited by a single chain from a neighbouring dimer, making a functional assembly consisting of three chains `A`, `B` and `C`. Here XCA can map crystal forms to **two assemblies**:
+
+<img src="_static/media/crystal_form_example_D.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
+
+```yaml
+assemblies:
+    dimer:
+        reference: model_4
+        biomol: A,B
+        chains: A,B
+    dimer_inhibited:
+        reference: model_5
+        biomol: A,B,C
+        chains: A,B,C
+crystalforms:
+    crystalform_1:
+        reference: model_4
+        assemblies:
+            dimer_assembly_A_B:
+                assembly: dimer
+                chains: A,B
+    crystalform_2:
+        reference: model_5
+        assemblies:
+            dimer_assembly_A_B:
+                assembly: dimer
+                chains: A,B
+            dimer_inhibited_assembly_C_D_A:
+                assembly: dimer_inhibited
+                chains: C,D,A
+            dimer_inhibited_assembly_E_F_B:
+                assembly: dimer_inhibited
+                chains: E,F,B
+```
+This `assemblies.yaml` describes the following:
+- `dimer` is the user-defined name given to the assembly containing two chains `A` and `B`, and has the reference structure `model_4`
+- `dimer_inhibited` is the user-defined name given to the assembly containing three chains `A`, `B` and `C`, using the reference structure `model_5`
+- `crystalform_1` is defined using the space group from reference structure `model_4`. It contains one `dimer` assembly, corresponding to `model_4` chains `A` and `B`
+- `crystalform_2` is defined using the space group from reference structure `model_5`. It contains one `dimer` assembly, corresponding to `model_5` chains `A` and `B`. It also contains two `dimer_inhibited` assemblies. Here, dimer `CD` is inhibited by chain `A` in dimer `AB`, so corresponds to `model_5` chains `C`, `D`, `A`. Dimer `EF` is inhibited by chain `B` in dimer `AB`, so corresponds to `model_5` chains `B`, `E`, `F`. 
+
+By using **two assemblies**, XCA will map assemblies independently allowing different assembly definitions to be represented within the same crystal form. In this example, the `dimer` and `dimer_inhibited` crystal form assemblies are mapped to their corresponding reference chains in `model_5` with two separate instances of the `dimer_inhibited` crystal form assembly, allowing XCA to account for different structural states or compositions within the same crystal form.
+
+---
+
+### 2.3. The Config YAML
 
 Next we need to declare things using the `config.yaml` and `assemblies.yaml` files.
 
@@ -157,9 +324,9 @@ Any datasets you specify in the `config.yaml`, including as references in `ref_d
 
 Working with YAML files can be difficult at first. Free tools such as [yamlchecker.com](https://yamlchecker.com) may help you learn and check the syntax.
 
-Below further explains some of the `config.yaml` fields. If You're having issues please the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)
+Below further explains some of the `config.yaml` fields. If You're having issues please the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z). For a comprehensive explanation of the YAML configuration and keywords see the [yaml keywords](yaml-keywords.md) documentation.
 
-#### 2.2.1. Data types
+#### 2.3.1. Data types
 
 There are two types of data inputs that can be specified for XCA, `model_building` and `manual`
 
@@ -214,7 +381,7 @@ then 2 crystals will be processed and given the names 1ABC and 5XYZ. The second 
 So, currently, the ligand in the PDB file must be renamed to LIG (do not rename it in the CIF file). We expect to remove
 this limitation soon.
 
-#### 2.2.2. Code Prefix
+#### 2.3.2. Code Prefix
 
 `code_prefix` and `code_prefix_tooltip` are fields that allow you to distinguish this uploaded dataset.
 For example you may use `code_prefix` to specify a crystal construct. `code_prefix_tooltip` should be a string
@@ -222,7 +389,7 @@ explaining the meaning of the prefix, this will be displayed in Fragalysis.
 `code_prefix` is necessary for inputs or type `model_building`, but can be an empty string: `""`.
 For inputs of type `manual` it is not needed as the names of the PDB files are used for display in Fragalysis.
 
-#### 2.2.3. Covalent ligands
+#### 2.3.3. Covalent ligands
 
 The Fragalysis UI uses different molecules for displaying the protein and the ligand. This means it cannot render the
 bond for a covalent ligand. As a workaround for this XCA tag 2.1.7 (October 2024) introduced a feature where the
@@ -249,7 +416,7 @@ IMPORTANT: to enable this covalent ligand functionality you need to add this to 
 covalent: true
 ```
 
-#### 2.2.4. Sequence information
+#### 2.3.4. Sequence information
 
 In order to generate files for PDB deposition we need to specify the protein sequences.
 For each `type: model_building` section you must define the protein sequence information using a section like this:
@@ -305,7 +472,7 @@ If this information is found and is valid the sequences will be used:
 2. (at a later phase) in adding SEQRES records to the crystallographic and aligned files used by Fragalysis
 
 
-#### 2.2.5. Extra files
+#### 2.3.5. Extra files
 
 There is support for adding arbitrary extra files to the upload. These files are not used by Fragalysis but
 will be added to any downloads from Fragalysis.
@@ -340,158 +507,7 @@ first column being the crystal name.
 We expect that a future version of Fragalysis will make these additional identifiers (compound aliases) visible in the
 UI. For now, they just appear in the downloaded files.
 
-### 2.3. The assemblies YAML
-
-The `assemblies.yaml` file tells XChemAlign how the protein chains in your crystal structures are organised into biological assemblies and how those assemblies occur in each crystal form.
-
-This information is used by XChemAlign when aligning structures from different crystal forms. In particular, it allows XChemAlign to distinguish between the **biological assembly** of a protein and the **individual copies** of that assembly present in a crystal structure, relative to a **reference pdb**. 
-
-An `assemblies.yaml` file contains two sections with a number of fields:
-- `assemblies` — defines the **biological assembly or assemblies** present within the data to be aligned
-  - `reference` — a reference PDB structure 
-  - `biomol` — chain identifiers used within the biological assembly definition
-  - `chains` — corresponding chain identifiers in the reference PDB structure
-- `crystalforms` — defines the **crystal forms** being processed, **specifying which assemblies occur in a specific space group**
-
-> **Note**: As [mentioned above](#22-the-config-yaml), reference datasets must be specified in the `config.yaml` under `ref_datasets`, and must be found in one of the directories specified in `inputs`.
-
-#### 2.3.1. Example 1
-
-This simple example YAML defines a protein that is a monomer, occuring as one copy in different crystal forms:
-
-<img src="_static/media/crystal_form_example_A.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
-
-```yaml
-assemblies:
-    monomer:
-        reference: model_1
-        biomol: A
-        chains: A
-crystalforms:
-    crystalform_1:
-        reference: model_1
-        assemblies:
-            assembly_1:
-                assembly: monomer
-                chains: A 
-    crystalform_2:
-        reference: model_2
-        assemblies:
-            assembly_1:
-                assembly: monomer
-                chains: A
-```
-This `assemblies.yaml` describes the following:
-- `monomer` is the user-defined name given to the assembly containing chain `A` and has a reference structure `model_1`
-- `crystalform_1` is defined using the space group from reference structure `model_1`. It contains one `monomer` assembly, corresponding to `model_1` chain `A` 
-- `crystalform_2` is defined using the space group from reference structure `model_2`. It contains one `monomer` assembly, corresponding to `model_2` chain `A` 
-
-> **Note**: the names `monomer`, `crystalform_1`, `crystalform_2` and `assembly_1` are user-defined identifiers. `model_*` corresponds directly to a reference PDB file. They can be changed to appropriate names for your project.
-
-#### 2.3.2. Example 2
-
-This next example YAML defines a protein that is a trimer, whereby the assembly contains more than one chain:
-
-<img src="_static/media/crystal_form_example_C.png" alt="lhs" width="400px" style="display:block; margin-left:auto; margin-right:auto;">
-
-```yaml
-assemblies:
-    trimer:
-        reference: model_3
-        biomol: A,B,C
-        chains: A,B,C
-crystalforms:
-    crystalform_1:
-        reference: model_3
-        assemblies:
-            trimer_assembly_A_B_C:
-                assembly: trimer
-                chains: A,B,C
-```
-This `assemblies.yaml` describes the following:
-- `trimer` is the user-defined name given to the assembly containing chains `A`,`B` and `C`, and has the reference structure `model_3`
-- `crystalform_1` is defined using space group from reference structure `model_3`. It contains one `trimer` assembly, corresponding to `model_3` chains `A`, `B` and `C`
-
-#### 2.3.3. Example 3
-
-The following example YAML defines a protein that is a monomer, occuring as either one or two copies in different crystal forms:
-
-<img src="_static/media/crystal_form_example_B.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
-
-```yaml
-assemblies:
-    monomer:
-        reference: model_1
-        biomol: A
-        chains: A
-crystalforms:
-    crystalform_1:
-        reference: model_1
-        assemblies:
-            assembly_1:
-                assembly: monomer
-                chains: A 
-    crystalform_2:
-        reference: model_2
-        assemblies:
-            assembly_1:
-                assembly: monomer
-                chains: A
-            assembly_2:
-                assembly: monomer
-                chains: B
-```
-
-This `assemblies.yaml` describes the following:
-- `monomer` is the user-defined name given to the assembly containing chain `A` and has a reference structure `model_1`
-- `crystalform_1` is defined using the space group from reference structure `model_1`. It contains one `monomer` assembly, corresponding to `model_1` chain `A`
-- `crystalform_2` is defined using the space group from reference structure `model_2`. It contains two `monomer` assemblies, corresponding to `model_2` chains `A` and `B`
-
-Despite there being two assemblies in `crystalform_2`, only a **single assembly** is needed as XCA will map chains `A` and `B` in `crystalform_2` onto chain `A` from the reference assembly `monomer`. 
-
-#### 2.3.4. Example 4
-This example YAML defines a protein that is a dimer with multiple crystal forms and assemblies. The first crystal form has a dimeric assembly consisting of two chains `A` and `B`. The second crystal form contains dimeric assemblies that are inhibited by a single chain from a neighbouring dimer, making a functional assembly consisting of three chains `A`, `B` and `C`. Here XCA can map crystal forms to **two assemblies**:
-
-<img src="_static/media/crystal_form_example_D.png" alt="lhs" width="800px" style="display:block; margin-left:auto; margin-right:auto;">
-
-```yaml
-assemblies:
-    dimer:
-        reference: model_4
-        biomol: A,B
-        chains: A,B
-    dimer_inhibited:
-        reference: model_5
-        biomol: A,B,C
-        chains: A,B,C
-crystalforms:
-    crystalform_1:
-        reference: model_4
-        assemblies:
-            dimer_assembly_A_B:
-                assembly: dimer
-                chains: A,B
-    crystalform_2:
-        reference: model_5
-        assemblies:
-            dimer_assembly_A_B:
-                assembly: dimer
-                chains: A,B
-            dimer_inhibited_assembly_C_D_A:
-                assembly: dimer_inhibited
-                chains: C,D,A
-            dimer_inhibited_assembly_E_F_B:
-                assembly: dimer_inhibited
-                chains: E,F,B
-```
-This `assemblies.yaml` describes the following:
-- `dimer` is the user-defined name given to the assembly containing two chains `A` and `B`, and has the reference structure `model_4`
-- `dimer_inhibited` is the user-defined name given to the assembly containing three chains `A`, `B` and `C`, using the reference structure `model_5`
-- `crystalform_1` is defined using the space group from reference structure `model_4`. It contains one `dimer` assembly, corresponding to `model_4` chains `A` and `B`
-- `crystalform_2` is defined using the space group from reference structure `model_5`. It contains one `dimer` assembly, corresponding to `model_5` chains `A` and `B`. It also contains two `dimer_inhibited` assemblies. Here, dimer `CD` is inhibited by chain `A` in dimer `AB`, so corresponds to `model_5` chains `C`, `D`, `A`. Dimer `EF` is inhibited by chain `B` in dimer `AB`, so corresponds to `model_5` chains `B`, `E`, `F`. 
-
-By using **two assemblies**, XCA will map assemblies independently allowing different assembly definitions to be represented within the same crystal form. In this example, the `dimer` and `dimer_inhibited` crystal form assemblies are mapped to their corresponding reference chains in `model_5` with two separate instances of the `dimer_inhibited` crystal form assembly, allowing XCA to account for different structural states or compositions within the same crystal form.
-
+---
 ### 2.4. Minimal simple example
 
 This example illustrates only the minimal required configuration.
