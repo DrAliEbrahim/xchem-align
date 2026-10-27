@@ -157,7 +157,7 @@ This `assemblies.yaml` describes the following:
 
 > **Note**: the names `monomer`, `crystalform_1`, `crystalform_2` and `assembly_1` are user-defined identifiers. `model_*` corresponds directly to a reference PDB file. They can be changed to appropriate names for your project. 
 
-For a comprehensive explanation of the YAML configuration and keywords see the [yaml keywords](yaml-keywords.md) documentation.
+For a comprehensive explanation of the assemblies YAML keywords see the [assemblies yaml keywords](assemblies-yaml-keywords.md) documentation.
 
 #### 2.2.2. Example 2
 
@@ -259,7 +259,7 @@ This `assemblies.yaml` describes the following:
 - `dimer` is the user-defined name given to the assembly containing two chains `A` and `B`, and has the reference structure `model_4`
 - `dimer_inhibited` is the user-defined name given to the assembly containing three chains `A`, `B` and `C`, using the reference structure `model_5`
 - `crystalform_1` is defined using the space group from reference structure `model_4`. It contains one `dimer` assembly, corresponding to `model_4` chains `A` and `B`
-- `crystalform_2` is defined using the space group from reference structure `model_5`. It contains one `dimer` assembly, corresponding to `model_5` chains `A` and `B`. It also contains two `dimer_inhibited` assemblies. Here, dimer `CD` is inhibited by chain `A` in dimer `AB`, so corresponds to `model_5` chains `C`, `D`, `A`. Dimer `EF` is inhibited by chain `B` in dimer `AB`, so corresponds to `model_5` chains `B`, `E`, `F`. 
+- `crystalform_2` is defined using the space group from reference structure `model_5`. It contains one `dimer` assembly, corresponding to `model_5` chains `A` and `B`. It also contains two `dimer_inhibited` assemblies. Here, dimer `CD` is inhibited by chain `A` in dimer `AB`, so corresponds to `model_5` chains `C`, `D`, `A`. Dimer `EF` is inhibited by chain `B` in dimer `AB`, so corresponds to `model_5` chains `E`, `F`, `B`. 
 
 By using **two assemblies**, XCA will map assemblies independently allowing different assembly definitions to be represented within the same crystal form. In this example, the `dimer` and `dimer_inhibited` crystal form assemblies are mapped to their corresponding reference chains in `model_5` with two separate instances of the `dimer_inhibited` crystal form assembly, allowing XCA to account for different structural states or compositions within the same crystal form.
 
@@ -324,7 +324,7 @@ Any datasets you specify in the `config.yaml`, including as references in `ref_d
 
 Working with YAML files can be difficult at first. Free tools such as [yamlchecker.com](https://yamlchecker.com) may help you learn and check the syntax.
 
-Below further explains some of the `config.yaml` fields. If You're having issues please the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z). For a comprehensive explanation of the YAML configuration and keywords see the [yaml keywords](yaml-keywords.md) documentation.
+Below further explains some of the `config.yaml` fields. If You're having issues please the team via [Slack](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z). For a comprehensive explanation of the YAML configuration and keywords see the [config yaml keywords](config-yaml-keywords.md) documentation.
 
 #### 2.3.1. Data types
 

@@ -1,4 +1,3 @@
-
 # XChemAlign
 
 XChemAlign (XCA) is a suite of command line tools for crystallographic fragment screening that identifies groupings of bound small-molecule fragments and aligns protein structures and ccp4 maps into a common reference frame.
@@ -6,13 +5,6 @@ XChemAlign (XCA) is a suite of command line tools for crystallographic fragment 
 ## Getting started
 
 XCA is typically run on fragment screening data that is collected by [XChem](https://https://www.diamond.ac.uk/Instruments/Mx/Fragment-Screening.html) at [Diamond Light Source](https://www.diamond.ac.uk/) and subsequently uploaded to [Fragalysis](https://fragalysis.readthedocs.io) for analysis. If you are new to XCA, we recommend starting with the [**XChemAlign user guide**](USER-GUIDE) to familiarise yourself with how it is run.
-
-## Quick links
-
-- [**fragalysis-app slack channel**](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)
-- [**Fragalysis documentation**](https://fragalysis.readthedocs.io)
-- [**DLS Fragalysis Production stack**](https://fragalysis.diamond.ac.uk)
-- [**DLS Fragalysis Staging stack**](https://fragalysis.xchem.diamond.ac.uk)
 
 ---
 
@@ -22,7 +14,8 @@ XCA is typically run on fragment screening data that is collected by [XChem](htt
 ```{toctree}
 :maxdepth: 1
 USER-GUIDE.md
-yaml-keywords.md
+config-yaml-keywords.md
+assemblies-yaml-keywords.md
 ```
 ## XChemAlign Developer Guide
 ```{toctree}
@@ -34,6 +27,15 @@ DEV-GUIDE.md
 :maxdepth: 1
 ALGORITHM-GUIDE.md
 ```
+
+# Useful links
+
+- [**fragalysis-app slack channel**](https://xchem-workspace.slack.com/archives/C02RCMA6S0Z)
+- [**Fragalysis documentation**](https://fragalysis.readthedocs.io)
+- [**DLS Fragalysis Production stack**](https://fragalysis.diamond.ac.uk)
+- [**DLS Fragalysis Staging stack**](https://fragalysis.xchem.diamond.ac.uk)
+
+---
 
 ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/xchem/xchem-align?include_prereleases)
 
