@@ -1,6 +1,4 @@
-# YAML Configuration and Keywords
-
-## config.yaml keywords
+# config.yaml Configuration and Keywords
 
 This page describes the keywords available in the XChem Align `config.yaml` file.
 
@@ -18,7 +16,6 @@ config.yaml
 ├── statuses
 ├── panddas_missing_ok
 ├── covalent
-│
 └── inputs
     ├── dir
     ├── type
@@ -57,7 +54,7 @@ config.yaml
 
 ---
 
-### `target_name`
+## `target_name`
 
 The name of the target being processed.
 
@@ -83,7 +80,7 @@ The target name must:
 
 ---
 
-### `base_dir`
+## `base_dir`
 
 The base directory from which input paths are resolved.
 
@@ -120,27 +117,7 @@ data/inputs/experiment_1/
 
 ---
 
-### `copy_dir`
-
-Specifies a copy directory.
-
-```yaml
-copy_dir: data/inputs/copied
-```
-
-**Type:**
-
-`string`
-
-**Required:**
-
-No.
-
-> **Note**: `copy_dir` is retained in the current configuration schema but does not appear to control the output directory in the current collator implementation. The current output location is determined by the XChem Align working directory and its `upload-current` directory.
-
----
-
-### `extra_files_dir`
+## `extra_files_dir`
 
 Specifies a directory containing additional files that should be copied into the XChem Align output.
 
@@ -170,7 +147,7 @@ If the directory does not exist, XChem Align reports a warning.
 
 ---
 
-### `ref_datasets`
+## `ref_datasets`
 
 Defines datasets that should be treated as reference datasets.
 
@@ -194,7 +171,7 @@ Reference datasets are also required when an assembly or crystal form in `assemb
 
 ---
 
-### `statuses`
+## `statuses`
 
 Controls which SoakDB refinement statuses are included when processing `model_building` inputs.
 
@@ -239,7 +216,7 @@ Datasets with status `7` are also handled separately as rejected datasets.
 
 ---
 
-### `panddas_missing_ok`
+## `panddas_missing_ok`
 
 Specifies datasets for which missing PanDDA event maps should not be treated as an error.
 
@@ -271,7 +248,7 @@ This option should therefore only be used for datasets where the absence of a Pa
 
 ---
 
-### `covalent`
+## `covalent`
 
 Specifies covalent-processing information.
 
@@ -289,13 +266,11 @@ No.
 
 **Note:**
 
-`covalent` is present in the current XChem Align configuration schema, but the current collator implementation does not appear to consume this value.
-
-It should therefore be considered a reserved or legacy configuration option unless a specific XChem Align workflow provides additional handling for it.
+`covalent` is present in the current XChem Align configuration schema to apply the a pseudo-covalent bond to appear in Fragalysis.
 
 ---
 
-### `inputs`
+## `inputs`
 
 The `inputs` section defines the data sources that XChem Align should process.
 
@@ -338,7 +313,7 @@ The available input types are:
 
 ---
 
-#### `inputs.dir`
+### `inputs.dir`
 
 Specifies the directory containing the input data.
 
@@ -366,7 +341,7 @@ For `manual` inputs, XChem Align searches the specified directory directly for P
 
 ---
 
-#### `inputs.type`
+### `inputs.type`
 
 Specifies the type of input data.
 
@@ -391,7 +366,7 @@ Yes.
 
 ---
 
-#### `inputs.code_prefix`
+### `inputs.code_prefix`
 
 Specifies the prefix associated with datasets from this input.
 
@@ -409,7 +384,7 @@ No.
 
 ---
 
-#### `inputs.code_prefix_tooltip`
+### `inputs.code_prefix_tooltip`
 
 Provides descriptive tooltip text shown in Fragalysis.
 
@@ -435,7 +410,7 @@ If the same prefix is used with different tooltips across multiple inputs, XChem
 
 ---
 
-#### `inputs.soakdb`
+### `inputs.soakdb`
 
 Specifies the SoakDB SQLite database associated with a `model_building` input.
 
@@ -476,7 +451,7 @@ For `model_building` inputs, the resulting database file **must exist**.
 
 ---
 
-#### `inputs.exclude`
+### `inputs.exclude`
 
 Specifies datasets that should not be processed.
 
@@ -504,7 +479,7 @@ This is useful for excluding datasets that are present in the source data but sh
 
 ---
 
-#### `inputs.panddas_event_files`
+### `inputs.panddas_event_files`
 
 Specifies one or more PanDDA event CSV files.
 
@@ -532,7 +507,7 @@ This option is applicable to `model_building` inputs.
 
 ---
 
-### `sequences`
+## `sequences`
 
 Defines the protein sequences present in the crystallographic models.
 
@@ -556,7 +531,7 @@ The `sequences` section is optional during the collator workflow. Sequence infor
 
 ---
 
-#### `sequences.dir`
+### `sequences.dir`
 
 Specifies the directory containing the FASTA files.
 
@@ -579,7 +554,7 @@ The directory is relative to the input directory.
 
 ---
 
-#### `sequences.default`
+### `sequences.default`
 
 Specifies the default FASTA file.
 
@@ -602,7 +577,7 @@ The default sequence is used for crystals that do not have a sequence variant as
 
 ---
 
-#### `sequences.variants`
+### `sequences.variants`
 
 Defines alternative sequence files for specific crystals.
 
@@ -627,7 +602,7 @@ Each variant associates one FASTA file with one or more crystal names.
 
 ---
 
-#### `sequences.variants.sequence`
+### `sequences.variants.sequence`
 
 Specifies the FASTA file containing an alternative sequence.
 
@@ -647,7 +622,7 @@ The file is resolved relative to `sequences.dir`.
 
 ---
 
-#### `sequences.variants.crystals`
+### `sequences.variants.crystals`
 
 Lists the crystals that use the corresponding sequence variant.
 
@@ -669,7 +644,7 @@ Each listed crystal is assigned the sequence from the corresponding variant FAST
 
 ---
 
-### Configuration example
+## Configuration example
 
 A typical `model_building` configuration can therefore look like:
 
